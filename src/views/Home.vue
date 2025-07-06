@@ -10,7 +10,7 @@
         </div>
       </div>
       <div class="hero-image">
-        <img src="@/assets/learning-illustration.svg" alt="Learning illustration">
+        <img src="@/assets/learning-illustration.png" alt="Learning illustration">
       </div>
     </section>
 

@@ -2,11 +2,14 @@
 import { RouterView, RouterLink } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getAuth, signOut } from 'firebase/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const isLoggedIn = ref(false)
 const auth = getAuth()
+
+const hideNavbarRoutes = ['/', '/login', '/register']
 
 onMounted(() => {
   auth.onAuthStateChanged((user) => {
@@ -26,20 +29,20 @@ async function handleLogout() {
 
 <template>
   <div class="app-container">
-    <header class="top-navbar" :class="{ 'authenticated': isLoggedIn }">
+    <header 
+      class="top-navbar" 
+      :class="{ 'authenticated': isLoggedIn }"
+      v-if="!hideNavbarRoutes.includes(route.path)"
+    >
       <div class="navbar-content">
         <div class="logo-container">
-          <RouterLink to="/" class="logo-text">
+          <RouterLink to="/dashboard" class="logo-text">
             <h1>PrimeLearn</h1>
           </RouterLink>
         </div>
         
         <nav class="nav-links">
           <div class="nav-center">
-            <RouterLink v-if="!isLoggedIn" to="/">Home</RouterLink>
-            <RouterLink v-if="!isLoggedIn" to="/login">Login</RouterLink>
-            <RouterLink v-if="!isLoggedIn" to="/register">Register</RouterLink>
-            
             <div v-if="isLoggedIn" class="user-nav-links">
               <RouterLink to="/dashboard">Dashboard</RouterLink>
               <RouterLink to="/flashcards">Flashcards</RouterLink>
@@ -57,7 +60,7 @@ async function handleLogout() {
       </div>
     </header>
 
-    <main class="main-content">
+    <main class="main-content" :class="{ 'full-height': hideNavbarRoutes.includes(route.path) }">
       <div class="content-container">
         <RouterView />
       </div>
@@ -74,20 +77,14 @@ async function handleLogout() {
 }
 
 .top-navbar {
-  background-color: #1e40af;
-  color: white;
+  background-color: rgb(211, 193, 218);
+  color: #1e40af;
   padding: 1rem 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
-}
-
-.top-navbar.authenticated {
-  background-color: rgb(211, 193, 218);
-  color: #1e40af;
   border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-content {
@@ -146,7 +143,7 @@ async function handleLogout() {
 }
 
 .nav-links a {
-  color: inherit;
+  color: #4b5563;
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
@@ -154,21 +151,12 @@ async function handleLogout() {
   font-weight: 500;
 }
 
-.top-navbar:not(.authenticated) a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-}
-
-.top-navbar.authenticated a {
-  color: #4b5563;
-}
-
-.top-navbar.authenticated a:hover {
+.nav-links a:hover {
   color: #1e40af;
   background-color: rgba(30, 64, 175, 0.05);
 }
 
-.top-navbar.authenticated a.router-link-exact-active {
+.nav-links a.router-link-exact-active {
   color: #1e40af;
   font-weight: 600;
   background-color: rgba(30, 64, 175, 0.1);
@@ -197,6 +185,10 @@ async function handleLogout() {
   padding: 2rem;
   display: flex;
   justify-content: center;
+}
+
+.main-content.full-height {
+  min-height: 100vh;
 }
 
 .content-container {
