@@ -64,7 +64,16 @@
       </div>
       
       <div class="progress-section">
-        <h2>Difficult Numbers</h2>
+        <div class="section-header">
+          <h2>Difficult Numbers</h2>
+          <router-link 
+            v-if="difficultNumbers.length > 0" 
+            to="/flashcards?filter=difficult" 
+            class="practice-btn"
+          >
+            Practice Difficult Numbers
+          </router-link>
+        </div>
         <div v-if="difficultNumbers.length > 0" class="difficult-numbers">
           <div 
             v-for="number in difficultNumbers" 
@@ -73,6 +82,7 @@
             @click="practiceNumber(number)"
           >
             <span class="number">{{ number }}</span>
+            <span class="number-type">{{ isPrime(number) ? 'Prime' : 'Composite' }}</span>
             <span class="remove-btn" @click.stop="removeDifficult(number)">×</span>
           </div>
         </div>
@@ -85,6 +95,28 @@
           <canvas ref="progressChart"></canvas>
         </div>
         <p v-else class="no-activity">Complete some quizzes to see your progress chart</p>
+      </div>
+      
+      <div class="progress-section">
+        <h2>Learning Statistics</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">{{ progressData.viewedNumbers ? progressData.viewedNumbers.length : 0 }}</div>
+            <div class="stat-label">Numbers Viewed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ totalQuizzes }}</div>
+            <div class="stat-label">Quizzes Taken</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ averageAccuracy }}%</div>
+            <div class="stat-label">Average Accuracy</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ lastStudyDays }}</div>
+            <div class="stat-label">Days Since Last Study</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -126,6 +158,27 @@ export default {
     },
     hasChartData() {
       return this.progressData.quizHistory && this.progressData.quizHistory.length > 0;
+    },
+    totalQuizzes() {
+      return this.progressData.quizHistory ? this.progressData.quizHistory.length : 0;
+    },
+    averageAccuracy() {
+      if (!this.progressData.quizHistory || this.progressData.quizHistory.length === 0) {
+        return 0;
+      }
+      const total = this.progressData.quizHistory.reduce((sum, quiz) => {
+        return sum + Math.round((quiz.score / quiz.total) * 100);
+      }, 0);
+      return Math.round(total / this.progressData.quizHistory.length);
+    },
+    lastStudyDays() {
+      if (!this.progressData.lastViewed) return 0;
+      const lastViewed = this.progressData.lastViewed.toDate ? 
+        this.progressData.lastViewed.toDate() : 
+        new Date(this.progressData.lastViewed);
+      const now = new Date();
+      const diffTime = Math.abs(now - lastViewed);
+      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
     }
   },
   async created() {
@@ -252,6 +305,19 @@ export default {
           year: 'numeric'
         });
       }
+    },
+    
+    isPrime(num) {
+      if (num <= 1) return false;
+      if (num <= 3) return true;
+      
+      if (num % 2 === 0 || num % 3 === 0) return false;
+      
+      for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
+      }
+      
+      return true;
     },
     
     practiceNumber(number) {
@@ -551,13 +617,36 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.progress-section h2 {
-  margin-top: 0;
-  color: #2c3e50;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding-bottom: 15px;
   border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  margin: 0;
+  color: #2c3e50;
   font-size: 1.5rem;
   font-weight: 600;
+}
+
+.practice-btn {
+  background: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.practice-btn:hover {
+  background: #388E3C;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .activity-list {
@@ -631,6 +720,7 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid rgba(244, 67, 54, 0.2);
+  position: relative;
 }
 
 .number-card:hover {
@@ -645,46 +735,91 @@ export default {
   color: #c62828;
 }
 
+.number-type {
+  font-size: 0.8rem;
+  color: #c62828;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-right: 10px;
+}
+
 .remove-btn {
-  color: #f44336;
-  font-weight: bold;
-  font-size: 1.4rem;
-  padding: 0 6px;
+  color: #c62828;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
   border-radius: 50%;
-  transition: all 0.3s ease;
-  line-height: 1;
+  transition: all 0.2s ease;
 }
 
 .remove-btn:hover {
-  background-color: #f44336;
-  color: white;
+  background-color: rgba(198, 40, 40, 0.1);
+  transform: scale(1.2);
+}
+
+.chart-section {
+  min-height: 400px;
+}
+
+.chart-container {
+  position: relative;
+  height: 350px;
+  width: 100%;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.9rem;
 }
 
 .no-activity {
   text-align: center;
   color: #666;
-  padding: 40px;
+  padding: 40px 0;
   font-style: italic;
 }
 
-.chart-section {
-  padding-bottom: 40px;
-}
-
-.chart-container {
-  position: relative;
-  height: 400px;
-  margin-top: 25px;
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 20px;
-}
-
 @media (max-width: 768px) {
-  .progress-container {
-    padding: 15px;
+  .progress-summary {
+    grid-template-columns: 1fr 1fr;
   }
   
+  .chart-container {
+    height: 300px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
   .progress-summary {
     grid-template-columns: 1fr;
   }
@@ -692,10 +827,11 @@ export default {
   .activity-item {
     flex-direction: column;
     align-items: flex-start;
-    text-align: left;
+    padding: 15px;
   }
   
   .activity-icon {
+    margin-right: 0;
     margin-bottom: 10px;
   }
   
@@ -704,26 +840,12 @@ export default {
     margin-top: 10px;
   }
   
-  .chart-container {
-    height: 300px;
-    padding: 15px;
-  }
-}
-
-@media (max-width: 480px) {
-  .summary-card {
-    padding: 20px;
-  }
-  
   .progress-section {
     padding: 20px;
   }
   
-  .big-number {
-    font-size: 2rem;
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
   }
-  
-  .level-display {
-    font-size: 1.5rem;
-  }
-}</style>
+}
+</style>

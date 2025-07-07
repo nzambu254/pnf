@@ -464,7 +464,7 @@ export default {
       this.quizType = null;
     },
     returnToDashboard() {
-      this.$router.push('/');
+      this.$router.push('/dashboard');
     }
   }
 };

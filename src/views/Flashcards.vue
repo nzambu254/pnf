@@ -16,13 +16,19 @@
       </div>
     </div>
 
+    <!-- Debug info - remove in production -->
+    <div v-if="debugMode" class="debug-info">
+      <p>User: {{ user ? user.uid : 'Not logged in' }}</p>
+      <p>Difficult Numbers: {{ Array.from(difficultNumbers).join(', ') }}</p>
+    </div>
+
     <div class="flashcard-wrapper">
       <div 
         class="flashcard" 
-        :class="{ 'is-flipped': card.isFlipped, 'marked-difficult': card.isDifficult }"
-        v-for="(card, index) in filteredCards" 
-        :key="card.number"
-        @click="flipCard(index)"
+        :class="{ 'is-flipped': card.isFlipped, 'marked-difficult': difficultNumbers.has(card.number) }"
+        v-for="(card, index) in paginatedCards" 
+        :key="`card-${card.number}-${currentPage}`"
+        @click="flipCard(card.number)"
       >
         <div class="flashcard-front">
           <h2>{{ card.number }}</h2>
@@ -50,30 +56,41 @@
           <button 
             @click.stop="toggleDifficult(card.number)" 
             class="difficult-btn"
+            :class="{ 'marked': difficultNumbers.has(card.number) }"
+            :disabled="!user"
           >
-            {{ card.isDifficult ? '✓ Difficult' : 'Mark as Difficult' }}
+            {{ difficultNumbers.has(card.number) ? '✓ Difficult' : 'Mark as Difficult' }}
           </button>
         </div>
       </div>
     </div>
 
-    <div v-if="filteredCards.length === 0" class="no-cards">
+    <div v-if="paginatedCards.length === 0" class="no-cards">
       <p>No flashcards to display. Try changing your filters.</p>
     </div>
 
-    <div class="pagination" v-if="filteredCards.length > 0">
+    <div class="pagination" v-if="totalPages > 1">
       <button @click="prevPage" :disabled="currentPage === 1">Previous</button>
       <span>Page {{ currentPage }} of {{ totalPages }}</span>
       <button @click="nextPage" :disabled="currentPage === totalPages">Next</button>
+    </div>
+
+    <!-- Loading/Error states -->
+    <div v-if="loading" class="loading">
+      <p>Loading...</p>
+    </div>
+
+    <div v-if="error" class="error">
+      <p>{{ error }}</p>
+      <button @click="clearError">Clear Error</button>
     </div>
   </div>
 </template>
 
 <script>
 import { db } from '@/firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { mapState } from 'vuex';
-
+import { doc, getDoc, updateDoc, setDoc, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 export default {
   name: 'Flashcards',
@@ -81,30 +98,34 @@ export default {
     return {
       difficulty: 'beginner',
       allCards: [],
-      displayedCards: [],
       currentPage: 1,
       cardsPerPage: 12,
       studyMode: false,
-      filter: null
+      filter: null,
+      difficultNumbers: new Set(),
+      loading: false,
+      error: null,
+      debugMode: false,
+      user: null
     };
   },
   computed: {
-    ...mapState(['user']),
     filteredCards() {
-      let cards = [...this.displayedCards];
+      let cards = [...this.allCards];
       
-      // Apply filter if any
       if (this.$route.query.filter === 'difficult' && this.user) {
-        cards = cards.filter(card => card.isDifficult);
+        cards = cards.filter(card => this.difficultNumbers.has(card.number));
       }
       
-      // Pagination
+      return cards;
+    },
+    paginatedCards() {
       const start = (this.currentPage - 1) * this.cardsPerPage;
       const end = start + this.cardsPerPage;
-      return cards.slice(start, end);
+      return this.filteredCards.slice(start, end);
     },
     totalPages() {
-      return Math.ceil(this.displayedCards.length / this.cardsPerPage);
+      return Math.ceil(this.filteredCards.length / this.cardsPerPage);
     }
   },
   watch: {
@@ -116,9 +137,19 @@ export default {
       this.currentPage = 1;
     }
   },
-  async created() {
+  created() {
+    const auth = getAuth();
+    onAuthStateChanged(auth, (user) => {
+      this.user = user;
+      if (user) {
+        this.loadDifficultNumbers();
+      } else {
+        this.difficultNumbers.clear();
+      }
+    });
+
     this.filter = this.$route.query.filter || null;
-    await this.loadFlashcards();
+    this.loadFlashcards();
   },
   methods: {
     async loadFlashcards() {
@@ -132,12 +163,51 @@ export default {
       }
 
       this.allCards = this.generatePrimeCards(maxNumber);
-      this.displayedCards = [...this.allCards];
+      this.currentPage = 1;
+    },
+    
+    async loadDifficultNumbers() {
+      if (!this.user) return;
       
-      if (this.user) {
-        await this.markDifficultCards();
+      this.loading = true;
+      try {
+        const userDoc = doc(db, 'users', this.user.uid);
+        const docSnap = await getDoc(userDoc);
+        
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          const difficultArray = userData?.progress?.difficultNumbers || [];
+          this.difficultNumbers = new Set(difficultArray);
+        } else {
+          await this.initializeUserDocument();
+        }
+      } catch (error) {
+        console.error("Error fetching difficult numbers:", error);
+        this.error = `Error loading difficult numbers: ${error.message}`;
+      } finally {
+        this.loading = false;
       }
     },
+
+    async initializeUserDocument() {
+      if (!this.user) return;
+      
+      try {
+        const userDoc = doc(db, 'users', this.user.uid);
+        await setDoc(userDoc, {
+          progress: {
+            difficultNumbers: [],
+            totalFlashcards: 0,
+            viewedNumbers: [],
+            lastViewed: new Date()
+          }
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error initializing user document:", error);
+        this.error = `Error initializing user data: ${error.message}`;
+      }
+    },
+    
     generatePrimeCards(max) {
       const cards = [];
       for (let i = 2; i <= max; i++) {
@@ -150,12 +220,12 @@ export default {
           isPrime,
           factors,
           factorTree,
-          isFlipped: false,
-          isDifficult: false
+          isFlipped: false
         });
       }
       return cards;
     },
+    
     isPrime(num) {
       if (num <= 1) return false;
       if (num === 2) return true;
@@ -166,6 +236,7 @@ export default {
       }
       return true;
     },
+    
     getFactors(num) {
       const factors = [];
       for (let i = 2; i < num; i++) {
@@ -173,6 +244,7 @@ export default {
       }
       return factors;
     },
+    
     generateFactorTree(num) {
       if (this.isPrime(num)) return [[num]];
       
@@ -201,6 +273,7 @@ export default {
       
       return tree;
     },
+    
     findFirstDivisor(num) {
       if (num % 2 === 0) return 2;
       for (let i = 3; i <= Math.sqrt(num); i += 2) {
@@ -208,88 +281,96 @@ export default {
       }
       return num;
     },
-    flipCard(index) {
-      this.filteredCards[index].isFlipped = !this.filteredCards[index].isFlipped;
-      
-      // Track viewed flashcards for progress
-      if (this.user && !this.filteredCards[index].isFlipped) {
-        this.recordFlashcardView(this.filteredCards[index].number);
+    
+    flipCard(number) {
+      const card = this.allCards.find(c => c.number === number);
+      if (card) {
+        card.isFlipped = !card.isFlipped;
+        
+        if (this.user && !card.isFlipped) {
+          this.recordFlashcardView(number);
+        }
       }
     },
+    
     shuffleCards() {
-      this.displayedCards = [...this.allCards].sort(() => Math.random() - 0.5);
+      this.allCards = [...this.allCards].sort(() => Math.random() - 0.5);
       this.currentPage = 1;
     },
+    
     toggleStudyMode() {
       this.studyMode = !this.studyMode;
-      // Flip all cards back when exiting study mode
       if (!this.studyMode) {
-        this.displayedCards.forEach(card => card.isFlipped = false);
+        this.allCards.forEach(card => card.isFlipped = false);
       }
     },
-    async markDifficultCards() {
-      try {
-        const userDoc = doc(db, 'users', this.user.uid);
-        const docSnap = await getDoc(userDoc);
-        
-        if (docSnap.exists()) {
-          const difficultNumbers = docSnap.data().progress?.difficultNumbers || [];
-          this.displayedCards.forEach(card => {
-            card.isDifficult = difficultNumbers.includes(card.number);
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching difficult numbers:", error);
-      }
-    },
+    
     async toggleDifficult(number) {
-      if (!this.user) return;
-      
-      const card = this.displayedCards.find(c => c.number === number);
-      if (!card) return;
-      
-      card.isDifficult = !card.isDifficult;
-      
+      if (!this.user) {
+        this.error = 'Please sign in to mark numbers as difficult';
+        return;
+      }
+
       try {
+        this.loading = true;
+        const wasMarked = this.difficultNumbers.has(number);
         const userDoc = doc(db, 'users', this.user.uid);
-        
-        if (card.isDifficult) {
-          await updateDoc(userDoc, {
-            'progress.difficultNumbers': arrayUnion(number)
-          });
-        } else {
+
+        if (wasMarked) {
+          this.difficultNumbers.delete(number);
           await updateDoc(userDoc, {
             'progress.difficultNumbers': arrayRemove(number)
+          });
+        } else {
+          this.difficultNumbers.add(number);
+          await updateDoc(userDoc, {
+            'progress.difficultNumbers': arrayUnion(number)
           });
         }
       } catch (error) {
         console.error("Error updating difficult numbers:", error);
-        card.isDifficult = !card.isDifficult; // Revert on error
+        this.error = `Error updating difficult numbers: ${error.message}`;
+      } finally {
+        this.loading = false;
       }
     },
+    
     async recordFlashcardView(number) {
       if (!this.user) return;
       
       try {
         const userDoc = doc(db, 'users', this.user.uid);
+        const now = new Date();
+        
+        const docSnap = await getDoc(userDoc);
+        if (!docSnap.exists()) {
+          await this.initializeUserDocument();
+        }
+        
         await updateDoc(userDoc, {
           'progress.totalFlashcards': increment(1),
-          'progress.lastViewed': new Date(),
+          'progress.lastViewed': now,
           'progress.viewedNumbers': arrayUnion(number)
         });
       } catch (error) {
         console.error("Error recording flashcard view:", error);
       }
     },
+    
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
+    
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
+    },
+
+    clearError() {
+      this.error = null;
     }
   }
 };
@@ -334,6 +415,11 @@ button {
   border: none;
 }
 
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .shuffle-btn {
   background-color: #2196F3;
   color: white;
@@ -342,6 +428,41 @@ button {
 .study-mode-btn {
   background-color: #FF9800;
   color: white;
+}
+
+.debug-info {
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.error {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error button {
+  background-color: #c62828;
+  color: white;
+  padding: 5px 10px;
+  font-size: 12px;
 }
 
 .flashcard-wrapper {
@@ -468,14 +589,23 @@ button {
   background-color: #607D8B;
   color: white;
   width: 100%;
+  transition: all 0.3s ease;
+}
+
+.difficult-btn.marked {
+  background-color: #FF5722;
+}
+
+.difficult-btn:hover:not(:disabled) {
+  background-color: #546E7A;
+}
+
+.difficult-btn.marked:hover:not(:disabled) {
+  background-color: #E64A19;
 }
 
 .marked-difficult .flashcard-back {
   background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-}
-
-.marked-difficult .difficult-btn {
-  background-color: #FF5722;
 }
 
 .no-cards {
