@@ -10,6 +10,7 @@ const isLoggedIn = ref(false)
 const auth = getAuth()
 
 const hideNavbarRoutes = ['/', '/login', '/admin/login', '/register']
+const hideLogoRoutes = ['/admin/login']
 
 onMounted(() => {
   auth.onAuthStateChanged((user) => {
@@ -35,7 +36,7 @@ async function handleLogout() {
       v-if="!hideNavbarRoutes.includes(route.path)"
     >
       <div class="navbar-content">
-        <div class="logo-container">
+        <div class="logo-container" v-if="!hideLogoRoutes.includes(route.path)">
           <div class="logo-icon">
             <span class="logo-symbol">P</span>
           </div>
@@ -105,7 +106,7 @@ async function handleLogout() {
   top: 0;
   z-index: 1000;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  min-height: 80px;
+  min-height: 40px;
 }
 
 .navbar-content {
