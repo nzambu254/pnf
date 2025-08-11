@@ -9,7 +9,7 @@ const route = useRoute()
 const isLoggedIn = ref(false)
 const auth = getAuth()
 
-const hideNavbarRoutes = ['/', '/login', '/register']
+const hideNavbarRoutes = ['/', '/login', '/admin/login', '/register']
 
 onMounted(() => {
   auth.onAuthStateChanged((user) => {

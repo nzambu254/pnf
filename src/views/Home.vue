@@ -10,27 +10,29 @@
         </div>
       </div>
       <div class="hero-image">
-        <img src="@/assets/learning-illustration.png" alt="Learning illustration">
+        <img :src="heroImage" alt="Students learning together">
       </div>
     </section>
 
     <section class="features-section">
       <h2>Our Features</h2>
       <div class="features-grid">
-        <div class="feature-card">
-          <span class="material-icons">style</span>
-          <h3>Flashcards</h3>
-          <p>Create and study with interactive flashcards to improve retention.</p>
+        <div class="feature-card" v-for="feature in features" :key="feature.title">
+          <div class="feature-icon">
+            <img :src="feature.icon" :alt="feature.title">
+          </div>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.text }}</p>
         </div>
-        <div class="feature-card">
-          <span class="material-icons">quiz</span>
-          <h3>Quizzes</h3>
-          <p>Test your knowledge with customizable quizzes.</p>
-        </div>
-        <div class="feature-card">
-          <span class="material-icons">trending_up</span>
-          <h3>Progress Tracking</h3>
-          <p>Monitor your learning progress with detailed analytics.</p>
+      </div>
+    </section>
+
+    <section class="testimonial-section">
+      <div class="testimonial-content">
+        <img src="https://img.icons8.com/fluency/96/user-male-circle.png" alt="Happy student" class="testimonial-avatar">
+        <div class="testimonial-text">
+          <blockquote>"PrimeLearn helped me improve my test scores by 30% in just one month!"</blockquote>
+          <p class="testimonial-author">- Sarah Johnson, Medical Student</p>
         </div>
       </div>
     </section>
@@ -39,135 +41,160 @@
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import heroImage from '@/assets/image.jpeg'
+import flashcardImg from '@/assets/flashcard.jpeg'
+import quizImg from '@/assets/quiz.jpeg'
+import progImg from '@/assets/prog.jpeg'
+
+const features = [
+  {
+    title: 'Flashcards',
+    text: 'Create and study with interactive flashcards to improve retention.',
+    icon: flashcardImg
+  },
+  {
+    title: 'Quizzes',
+    text: 'Test your knowledge with customizable quizzes.',
+    icon: quizImg
+  },
+  {
+    title: 'Progress Tracking',
+    text: 'Monitor your learning progress with detailed analytics.',
+    icon: progImg
+  }
+]
 </script>
 
 <style scoped>
+/* Prevent scrolling */
+:host, html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
 .home-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.hero-section {
+  height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  padding: 4rem 0;
-}
-
-.hero-content {
-  flex: 1;
-}
-
-.hero-content h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #1e40af;
-}
-
-.hero-content p {
-  font-size: 1.25rem;
-  color: #4b5563;
-  margin-bottom: 2rem;
-}
-
-.cta-buttons {
-  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e0f7ff 100%);
+  padding: 1rem;
   gap: 1rem;
 }
 
+/* Hero section compressed */
+.hero-section {
+  flex: 0.45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(3, 169, 244, 0.1) 100%);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.hero-content h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #1e40af, #3b82f6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-content p {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+.cta-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
 .cta-button {
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 0.5rem;
   text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: bold;
+  transition: all 0.3s ease;
 }
-
 .cta-button.primary {
-  background-color: #1e40af;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
   color: white;
 }
-
-.cta-button.primary:hover {
-  background-color: #1e3a8a;
-}
-
 .cta-button.secondary {
-  border: 1px solid #1e40af;
+  border: 2px solid #1e40af;
   color: #1e40af;
+  background: white;
 }
-
-.cta-button.secondary:hover {
-  background-color: #eff6ff;
-}
-
-.hero-image {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
 .hero-image img {
-  max-width: 100%;
-  height: auto;
+  max-height: 140px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
+/* Features section compressed */
 .features-section {
-  padding: 4rem 0;
+  flex: 0.35;
+  background: white;
+  border-radius: 0.75rem;
+  padding: 0.8rem;
   text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
-
 .features-section h2 {
-  font-size: 2rem;
-  margin-bottom: 2rem;
-  color: #1e40af;
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+  background: linear-gradient(90deg, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
-
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.5rem;
 }
-
 .feature-card {
-  background-color: white;
+  background: #f9fafb;
   border-radius: 0.5rem;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  padding: 0.6rem;
 }
-
-.feature-card:hover {
-  transform: translateY(-5px);
+.feature-icon img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 0.5rem;
 }
-
-.feature-card .material-icons {
-  font-size: 2.5rem;
-  color: #1e40af;
-  margin-bottom: 1rem;
-}
-
 .feature-card h3 {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.2rem;
   color: #1e293b;
 }
-
 .feature-card p {
+  font-size: 0.75rem;
   color: #64748b;
 }
 
-@media (max-width: 768px) {
-  .hero-section {
-    flex-direction: column;
-    text-align: center;
-    padding: 2rem 0;
-  }
-  
-  .cta-buttons {
-    justify-content: center;
-  }
+/* Testimonial section compressed */
+.testimonial-section {
+  flex: 0.2;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border-radius: 0.75rem;
+  color: white;
+  padding: 0.8rem;
+}
+.testimonial-content {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.testimonial-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+blockquote {
+  font-size: 0.8rem;
+  margin: 0;
+}
+.testimonial-author {
+  font-size: 0.7rem;
 }
 </style>
