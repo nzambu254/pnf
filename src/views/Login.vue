@@ -10,11 +10,11 @@
         <div class="input-group">
           <label for="email">Email Address</label>
           <input 
-            v-model="email" 
+            v-model="email"
             id="email"
-            type="email" 
-            placeholder="Enter your email" 
-            class="auth-input" 
+            type="email"
+            placeholder="Enter your email"
+            class="auth-input"
             required
           />
         </div>
@@ -22,11 +22,11 @@
         <div class="input-group">
           <label for="password">Password</label>
           <input 
-            v-model="password" 
+            v-model="password"
             id="password"
-            type="password" 
-            placeholder="Enter your password" 
-            class="auth-input" 
+            type="password"
+            placeholder="Enter your password"
+            class="auth-input"
             required
           />
         </div>
@@ -37,6 +37,9 @@
         
         <div class="auth-footer">
           <p>Don't have an account? <RouterLink to="/register" class="auth-link">Create one</RouterLink></p>
+          <p class="admin-link-container">
+            <RouterLink to="/admin/login" class="admin-link">Admin Login</RouterLink>
+          </p>
         </div>
       </form>
     </div>
@@ -163,6 +166,10 @@ async function login() {
   color: #64748b;
 }
 
+.auth-footer p {
+  margin-bottom: 0.5rem;
+}
+
 .auth-link {
   color: #6366f1;
   font-weight: 500;
@@ -172,6 +179,29 @@ async function login() {
 
 .auth-link:hover {
   text-decoration: underline;
+}
+
+.admin-link-container {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.admin-link {
+  color: #dc2626;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+
+.admin-link:hover {
+  background-color: #dc2626;
+  color: white;
+  text-decoration: none;
 }
 
 @media (max-width: 480px) {

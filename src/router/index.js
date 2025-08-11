@@ -6,75 +6,96 @@ import Dashboard from '../views/Dashboard.vue'
 import Flashcards from '../views/Flashcards.vue'
 import Quiz from '../views/Quiz.vue'
 import Progress from '../views/Progress.vue'
+import AdminLogin from '../views/AdminLogin.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
 import { auth } from '../firebase'
 
 const routes = [
-  { 
-    path: '/', 
-    name: 'Home', 
+  {
+    path: '/',
+    name: 'Home',
     component: Home,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Home',
-      requiresAuth: false 
-    } 
+      requiresAuth: false
+    }
   },
-  { 
-    path: '/login', 
-    name: 'Login', 
+  {
+    path: '/login',
+    name: 'Login',
     component: Login,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Login',
-      requiresAuth: false 
-    } 
+      requiresAuth: false
+    }
   },
-  { 
-    path: '/register', 
-    name: 'Register', 
+  {
+    path: '/register',
+    name: 'Register',
     component: Register,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Register',
-      requiresAuth: false 
-    } 
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: AdminLogin,
+    meta: {
+      title: 'PrimeLearn - Admin Login',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+    meta: {
+      title: 'PrimeLearn - Admin Dashboard',
+      requiresAuth: false,
+      requiresAdmin: true
+    }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Dashboard',
-      requiresAuth: true 
+      requiresAuth: true
     }
   },
   {
     path: '/flashcards',
     name: 'Flashcards',
     component: Flashcards,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Flashcards',
-      requiresAuth: true 
+      requiresAuth: true
     }
   },
   {
     path: '/quiz',
     name: 'Quiz',
     component: Quiz,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Quiz',
-      requiresAuth: true 
+      requiresAuth: true
     }
   },
   {
     path: '/progress',
     name: 'Progress',
     component: Progress,
-    meta: { 
+    meta: {
       title: 'PrimeLearn - Progress',
-      requiresAuth: true 
+      requiresAuth: true
     }
   },
-  { 
-    path: '/:pathMatch(.*)*', 
-    redirect: '/' 
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ]
 
@@ -119,11 +140,25 @@ router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || 'PrimeLearn'
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  
+  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
+
+  // Check for admin access
+  if (requiresAdmin) {
+    const adminEmail = sessionStorage.getItem('adminEmail')
+    const adminPassword = sessionStorage.getItem('adminPassword')
+    
+    if (adminEmail !== 'kapkechui72@gmail.com' || adminPassword !== '1234567') {
+      next({ name: 'AdminLogin' })
+      return
+    }
+  }
+
   if (requiresAuth && !currentUser) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } else if ((to.name === 'Login' || to.name === 'Register') && currentUser) {
     next({ name: 'Dashboard' })
+  } else if (to.name === 'AdminLogin' && sessionStorage.getItem('adminEmail') === 'kapkechui72@gmail.com') {
+    next({ name: 'AdminDashboard' })
   } else {
     next()
   }

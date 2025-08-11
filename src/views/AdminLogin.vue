@@ -2,44 +2,46 @@
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-header">
-        <h1 class="auth-title">Create Account</h1>
-        <p class="auth-subtitle">Get started with your new account</p>
+        <h1 class="auth-title">Admin Login</h1>
+        <p class="auth-subtitle">Access the admin dashboard</p>
       </div>
       
-      <form @submit.prevent="register" class="auth-form">
+      <div v-if="error" class="error-message">
+        {{ error }}
+      </div>
+      
+      <form @submit.prevent="adminLogin" class="auth-form">
         <div class="input-group">
-          <label for="email">Email Address</label>
+          <label for="email">Admin Email</label>
           <input 
             v-model="email"
             id="email"
             type="email"
-            placeholder="Enter your email"
+            placeholder="Enter admin email"
             class="auth-input"
             required
           />
         </div>
         
         <div class="input-group">
-          <label for="password">Password</label>
+          <label for="password">Admin Password</label>
           <input 
             v-model="password"
             id="password"
             type="password"
-            placeholder="Create a password"
+            placeholder="Enter admin password"
             class="auth-input"
             required
           />
         </div>
         
-        <button type="submit" class="auth-button">
-          <span>Sign Up</span>
+        <button type="submit" class="auth-button" :disabled="loading">
+          <span v-if="loading">Signing in...</span>
+          <span v-else>Admin Sign In</span>
         </button>
         
         <div class="auth-footer">
-          <p>Already have an account? <RouterLink to="/login" class="auth-link">Sign in</RouterLink></p>
-          <p class="admin-link-container">
-            <RouterLink to="/admin/login" class="admin-link">Admin Login</RouterLink>
-          </p>
+          <p><RouterLink to="/login" class="auth-link">Back to User Login</RouterLink></p>
         </div>
       </form>
     </div>
@@ -48,25 +50,35 @@
 
 <script setup>
 import { ref } from 'vue'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { auth, db } from '@/firebase'
-import { doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
+const error = ref('')
+const loading = ref(false)
 const router = useRouter()
 
-async function register() {
+async function adminLogin() {
+  loading.value = true
+  error.value = ''
+  
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email.value, password.value)
-    await setDoc(doc(db, 'users', cred.user.uid), {
-      email: email.value,
-      createdAt: Date.now(),
-    })
-    router.push('/dashboard')
-  } catch (error) {
-    alert(error.message)
+    // Check if credentials match admin credentials
+    if (email.value === 'kapkechui72@gmail.com' && password.value === '1234567') {
+      // Store admin session
+      sessionStorage.setItem('adminEmail', email.value)
+      sessionStorage.setItem('adminPassword', password.value)
+      sessionStorage.setItem('adminLoginTime', new Date().getTime())
+      
+      // Redirect to admin dashboard
+      router.push('/admin/dashboard')
+    } else {
+      error.value = 'Invalid admin credentials'
+    }
+  } catch (err) {
+    error.value = 'Login failed. Please try again.'
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -77,7 +89,7 @@ async function register() {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2rem;
 }
 
@@ -86,7 +98,7 @@ async function register() {
   max-width: 420px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
   padding: 2.5rem;
 }
 
@@ -105,6 +117,16 @@ async function register() {
 .auth-subtitle {
   color: #64748b;
   font-size: 0.95rem;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 .auth-form {
@@ -137,14 +159,14 @@ async function register() {
 
 .auth-input:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
 .auth-button {
   width: 100%;
   padding: 0.875rem;
-  background-color: #10b981;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -155,9 +177,14 @@ async function register() {
   margin-top: 0.5rem;
 }
 
-.auth-button:hover {
-  background-color: #059669;
+.auth-button:hover:not(:disabled) {
   transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.auth-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .auth-button:active {
@@ -171,12 +198,8 @@ async function register() {
   color: #64748b;
 }
 
-.auth-footer p {
-  margin-bottom: 0.5rem;
-}
-
 .auth-link {
-  color: #10b981;
+  color: #667eea;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -184,29 +207,6 @@ async function register() {
 
 .auth-link:hover {
   text-decoration: underline;
-}
-
-.admin-link-container {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.admin-link {
-  color: #dc2626;
-  font-weight: 600;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border: 1px solid #dc2626;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  display: inline-block;
-}
-
-.admin-link:hover {
-  background-color: #dc2626;
-  color: white;
-  text-decoration: none;
 }
 
 @media (max-width: 480px) {

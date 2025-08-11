@@ -15,6 +15,9 @@
             <option value="all">All Time</option>
           </select>
         </div>
+        <button @click="logout" class="logout-btn">
+          <span class="btn-icon">🚪</span> Logout
+        </button>
       </div>
     </header>
 
@@ -69,8 +72,10 @@
                 </td>
                 <td>{{ user.flashcards }}</td>
                 <td>
-                  <div class="accuracy-bar" :style="{ width: user.accuracy + '%' }"></div>
-                  <span>{{ user.accuracy }}%</span>
+                  <div class="accuracy-container">
+                    <div class="accuracy-bar" :style="{ width: user.accuracy + '%' }"></div>
+                    <span>{{ user.accuracy }}%</span>
+                  </div>
                 </td>
                 <td>{{ formatDate(user.lastActive) }}</td>
                 <td>
@@ -89,18 +94,53 @@
         <div class="chart-card">
           <h3>User Progress Over Time</h3>
           <div class="chart-container">
-            <!-- Chart would be rendered here with a library like Chart.js -->
             <div class="chart-placeholder">
-              <img src="https://via.placeholder.com/500x300?text=Progress+Chart" alt="Progress Chart">
+              <div class="mock-chart">
+                <div class="chart-bars">
+                  <div class="bar" style="height: 60%"></div>
+                  <div class="bar" style="height: 80%"></div>
+                  <div class="bar" style="height: 45%"></div>
+                  <div class="bar" style="height: 90%"></div>
+                  <div class="bar" style="height: 70%"></div>
+                  <div class="bar" style="height: 85%"></div>
+                  <div class="bar" style="height: 95%"></div>
+                </div>
+                <div class="chart-labels">
+                  <span>Mon</span>
+                  <span>Tue</span>
+                  <span>Wed</span>
+                  <span>Thu</span>
+                  <span>Fri</span>
+                  <span>Sat</span>
+                  <span>Sun</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
         <div class="chart-card">
           <h3>Level Distribution</h3>
           <div class="chart-container">
-            <!-- Chart would be rendered here with a library like Chart.js -->
             <div class="chart-placeholder">
-              <img src="https://via.placeholder.com/500x300?text=Level+Distribution" alt="Level Distribution">
+              <div class="pie-chart">
+                <div class="pie-segment beginner" style="--percentage: 30"></div>
+                <div class="pie-segment intermediate" style="--percentage: 45"></div>
+                <div class="pie-segment advanced" style="--percentage: 25"></div>
+              </div>
+              <div class="pie-legend">
+                <div class="legend-item">
+                  <div class="legend-color beginner"></div>
+                  <span>Beginner (30%)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color intermediate"></div>
+                  <span>Intermediate (45%)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color advanced"></div>
+                  <span>Advanced (25%)</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -109,52 +149,72 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'AdminDashboard',
-  data() {
-    return {
-      timeRange: '7',
-      summaryData: {
-        totalUsers: 124,
-        avgFlashcards: 42,
-        avgAccuracy: 78,
-        activeUsers: 89
-      },
-      userPerformance: [
-        { id: 1, name: 'Alice Johnson', level: 'Advanced', flashcards: 87, accuracy: 92, lastActive: '2023-06-15' },
-        { id: 2, name: 'Bob Smith', level: 'Intermediate', flashcards: 45, accuracy: 78, lastActive: '2023-06-14' },
-        { id: 3, name: 'Charlie Brown', level: 'Beginner', flashcards: 12, accuracy: 65, lastActive: '2023-06-10' },
-        { id: 4, name: 'Diana Prince', level: 'Advanced', flashcards: 95, accuracy: 94, lastActive: '2023-06-15' },
-        { id: 5, name: 'Ethan Hunt', level: 'Intermediate', flashcards: 38, accuracy: 72, lastActive: '2023-06-13' },
-        { id: 6, name: 'Fiona Green', level: 'Beginner', flashcards: 8, accuracy: 58, lastActive: '2023-06-08' },
-        { id: 7, name: 'George Wilson', level: 'Intermediate', flashcards: 52, accuracy: 81, lastActive: '2023-06-15' }
-      ]
-    }
-  },
-  methods: {
-    refreshData() {
-      // In a real app, this would fetch fresh data from your API
-      console.log('Refreshing data with time range:', this.timeRange);
-    },
-    viewUserDetails(userId) {
-      // Navigate to user detail view
-      console.log('Viewing details for user:', userId);
-      this.$router.push(`/admin/users/${userId}`);
-    },
-    formatDate(dateString) {
-      // Simple date formatting - use a library like date-fns in production
-      const options = { year: 'numeric', month: 'short', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    },
-    getLevelClass(level) {
-      return {
-        'beginner': level === 'Beginner',
-        'intermediate': level === 'Intermediate',
-        'advanced': level === 'Advanced'
-      };
-    }
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const timeRange = ref('7')
+const summaryData = ref({
+  totalUsers: 124,
+  avgFlashcards: 42,
+  avgAccuracy: 78,
+  activeUsers: 89
+})
+
+const userPerformance = ref([
+  { id: 1, name: 'Alice Johnson', level: 'Advanced', flashcards: 87, accuracy: 92, lastActive: '2023-06-15' },
+  { id: 2, name: 'Bob Smith', level: 'Intermediate', flashcards: 45, accuracy: 78, lastActive: '2023-06-14' },
+  { id: 3, name: 'Charlie Brown', level: 'Beginner', flashcards: 12, accuracy: 65, lastActive: '2023-06-10' },
+  { id: 4, name: 'Diana Prince', level: 'Advanced', flashcards: 95, accuracy: 94, lastActive: '2023-06-15' },
+  { id: 5, name: 'Ethan Hunt', level: 'Intermediate', flashcards: 38, accuracy: 72, lastActive: '2023-06-13' },
+  { id: 6, name: 'Fiona Green', level: 'Beginner', flashcards: 8, accuracy: 58, lastActive: '2023-06-08' },
+  { id: 7, name: 'George Wilson', level: 'Intermediate', flashcards: 52, accuracy: 81, lastActive: '2023-06-15' }
+])
+
+onMounted(() => {
+  // Check if admin is logged in
+  const adminEmail = sessionStorage.getItem('adminEmail')
+  if (adminEmail !== 'kapkechui72@gmail.com') {
+    router.push('/admin/login')
   }
+})
+
+function refreshData() {
+  console.log('Refreshing data with time range:', timeRange.value)
+  // Simulate data refresh
+  summaryData.value = {
+    totalUsers: Math.floor(Math.random() * 200) + 100,
+    avgFlashcards: Math.floor(Math.random() * 80) + 20,
+    avgAccuracy: Math.floor(Math.random() * 40) + 60,
+    activeUsers: Math.floor(Math.random() * 150) + 50
+  }
+}
+
+function viewUserDetails(userId) {
+  console.log('Viewing details for user:', userId)
+  alert(`Viewing details for user ID: ${userId}`)
+}
+
+function formatDate(dateString) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' }
+  return new Date(dateString).toLocaleDateString(undefined, options)
+}
+
+function getLevelClass(level) {
+  return {
+    'beginner': level === 'Beginner',
+    'intermediate': level === 'Intermediate',
+    'advanced': level === 'Advanced'
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminEmail')
+  sessionStorage.removeItem('adminPassword')
+  sessionStorage.removeItem('adminLoginTime')
+  router.push('/admin/login')
 }
 </script>
 
@@ -191,7 +251,7 @@ export default {
   align-items: center;
 }
 
-.refresh-btn {
+.refresh-btn, .logout-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -204,8 +264,17 @@ export default {
   align-items: center;
 }
 
-.refresh-btn:hover {
+.refresh-btn:hover, .logout-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.logout-btn {
+  background: rgba(220, 38, 38, 0.2);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.logout-btn:hover {
+  background: rgba(220, 38, 38, 0.3);
 }
 
 .btn-icon {
@@ -323,13 +392,18 @@ export default {
   color: #155724;
 }
 
+.accuracy-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .accuracy-bar {
-  display: inline-block;
   height: 6px;
   background: linear-gradient(90deg, #4FACFE 0%, #00F2FE 100%);
   border-radius: 3px;
-  margin-right: 8px;
-  vertical-align: middle;
+  min-width: 50px;
+  max-width: 100px;
 }
 
 .action-btn {
@@ -373,13 +447,93 @@ export default {
 .chart-placeholder {
   background: #f8f9fa;
   border-radius: 8px;
-  overflow: hidden;
+  padding: 20px;
+  min-height: 300px;
 }
 
-.chart-placeholder img {
-  width: 100%;
-  height: auto;
-  display: block;
+.mock-chart {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: end;
+  height: 200px;
+  gap: 10px;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+.bar {
+  background: linear-gradient(to top, #4FACFE 0%, #00F2FE 100%);
+  width: 30px;
+  border-radius: 4px 4px 0 0;
+  animation: growBar 1s ease-in-out;
+}
+
+@keyframes growBar {
+  from { height: 0%; }
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pie-chart {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ffeeba 0deg 108deg,
+    #bee5eb 108deg 270deg,
+    #c3e6cb 270deg 360deg
+  );
+  margin: 20px auto;
+  position: relative;
+  animation: rotatePie 1s ease-in-out;
+}
+
+@keyframes rotatePie {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.legend-color.beginner {
+  background: #ffeeba;
+}
+
+.legend-color.intermediate {
+  background: #bee5eb;
+}
+
+.legend-color.advanced {
+  background: #c3e6cb;
 }
 
 @media (max-width: 768px) {
@@ -387,6 +541,10 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
+  }
+  
+  .admin-controls {
+    flex-wrap: wrap;
   }
   
   .summary-stats {
@@ -412,6 +570,14 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+  
+  .chart-bars {
+    gap: 5px;
+  }
+  
+  .bar {
+    width: 20px;
   }
 }
 </style>
